@@ -9,7 +9,6 @@
 #include <linux/kdev_t.h>  // mkdev
 #include <linux/cdev.h>    // cdev_init
 #include <linux/interrupt.h>
-//#include <linux/sched.h>
 #include <linux/timex.h>
 
 #define INT_NUM 12
@@ -25,6 +24,7 @@ struct cdev micey_cdev;
 static dev_t dev;
 const struct file_operations micey_file_ops;
 static int int_flag;
+static unsigned int t;
 
 
 //int request_irq(INT_NUM, micey_irq_handler, IRQF_SHARED, "micey", &micey_cdev)
@@ -34,6 +34,7 @@ static irqreturn_t micey_irq_handler(int irq, void *dev)
 {
 	//printk("Got an interrupt\n");
 	int_flag = 1;
+	t = (unsigned char)get_cycles();
 	wake_up_interruptible(&queue);
 	return IRQ_HANDLED;
 }
@@ -67,11 +68,9 @@ static int micey_release(struct inode *i, struct file *f)
 static ssize_t micey_read(struct file *f, char __user *buf, size_t sz, loff_t *off)
 {
 	// Writes into buf! (user space app READS us)
-	unsigned char t;
 	sz = 16;
 	while (true) {
 		//printk("Waaaat I'm not sleepng\n");
-		t = (unsigned char)get_cycles();//jiffies;//get_cycles();
 		t &= 0x01;
 		if (t)
 			t = '1';
